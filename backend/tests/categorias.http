@@ -1,0 +1,57 @@
+@baseUrl = http://127.0.0.1:8000
+
+### ==========================================================
+### CRUD CATEGORÍAS (lo consume el frontend; acá se prueba directo)
+### ==========================================================
+
+### 1. Listar categorías -> 200
+GET {{baseUrl}}/categorias
+
+### 2. Crear categoría -> 201
+# @name crearCategoria
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Herramientas {{$randomInt 1000 9999}}",
+  "descripcion": "Herramientas manuales"
+}
+
+### 3. Detalle -> 200
+GET {{baseUrl}}/categorias/{{crearCategoria.response.body.id}}
+
+### 4. Actualizar, reemplazo total -> 200
+PUT {{baseUrl}}/categorias/{{crearCategoria.response.body.id}}
+Content-Type: application/json
+
+{
+  "nombre": "{{crearCategoria.response.body.nombre}}",
+  "descripcion": "Herramientas de taller y jardín"
+}
+
+### 5. Eliminar -> 204
+DELETE {{baseUrl}}/categorias/{{crearCategoria.response.body.id}}
+
+### E1. Nombre duplicado -> 409
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "{{crearCategoria.response.body.nombre}}",
+  "descripcion": "duplicada"
+}
+
+### E2. Nombre vacío -> 422
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "",
+  "descripcion": "sin nombre"
+}
+
+### E3. Detalle inexistente -> 404
+GET {{baseUrl}}/categorias/99999
+
+### E4. Eliminar inexistente -> 404
+DELETE {{baseUrl}}/categorias/99999

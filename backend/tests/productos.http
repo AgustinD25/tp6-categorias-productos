@@ -1,0 +1,120 @@
+@baseUrl = http://127.0.0.1:8000
+
+### ==========================================================
+### CRUD PRODUCTOS + RELACIÓN PRODUCTO-CATEGORÍA (REST Client)
+### Ejecutar en orden, de arriba hacia abajo. Los ids se toman de las respuestas.
+### ==========================================================
+
+### 1. Crear categoría A (para vincular) -> 201
+# @name catA
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Electrónica {{$randomInt 1000 9999}}",
+  "descripcion": "Dispositivos electrónicos"
+}
+
+### 2. Crear categoría B -> 201
+# @name catB
+POST {{baseUrl}}/categorias
+Content-Type: application/json
+
+{
+  "nombre": "Accesorios {{$randomInt 1000 9999}}",
+  "descripcion": "Accesorios varios"
+}
+
+### ---------------- PRODUCTO ----------------
+
+### 3. Crear producto con una categoría -> 201
+# @name crearProducto
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Auriculares Bluetooth {{$randomInt 1000 9999}}",
+  "descripcion": "Auriculares inalámbricos con cancelación de ruido",
+  "precio_base": 49999.99,
+  "imagen_url": ["https://ejemplo.com/aur1.jpg", "https://ejemplo.com/aur2.jpg"],
+  "disponible": true,
+  "categoria_ids": [{{catA.response.body.id}}]
+}
+
+### 4. Listar productos -> 200
+GET {{baseUrl}}/productos
+
+### 5. Detalle del producto -> 200 (incluye sus categorías)
+GET {{baseUrl}}/productos/{{crearProducto.response.body.id}}
+
+### 6. Actualizar producto, reemplazo total -> 200
+PUT {{baseUrl}}/productos/{{crearProducto.response.body.id}}
+Content-Type: application/json
+
+{
+  "nombre": "{{crearProducto.response.body.nombre}}",
+  "descripcion": "Versión actualizada",
+  "precio_base": 54999.00,
+  "imagen_url": ["https://ejemplo.com/aur1.jpg"],
+  "disponible": false,
+  "categoria_ids": [{{catA.response.body.id}}]
+}
+
+### ---------------- PRODUCTO_CATEGORIA ----------------
+
+### 7. Agregar la categoría B al producto -> 201
+POST {{baseUrl}}/productos/{{crearProducto.response.body.id}}/categorias/{{catB.response.body.id}}
+
+### 8. Listar las categorías del producto -> 200 (A y B)
+GET {{baseUrl}}/productos/{{crearProducto.response.body.id}}/categorias
+
+### 9. Quitar la categoría B del producto -> 204
+DELETE {{baseUrl}}/productos/{{crearProducto.response.body.id}}/categorias/{{catB.response.body.id}}
+
+### 10. Eliminar el producto -> 204
+DELETE {{baseUrl}}/productos/{{crearProducto.response.body.id}}
+
+### 11. Detalle del producto eliminado -> 404
+GET {{baseUrl}}/productos/{{crearProducto.response.body.id}}
+
+
+### ==========================================================
+### ESCENARIOS DE ERROR
+### ==========================================================
+
+### E1. Producto con precio negativo -> 422
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Producto inválido",
+  "precio_base": -5
+}
+
+### E2. Producto con nombre vacío -> 422
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "   ",
+  "precio_base": 10
+}
+
+### E3. Producto con categoría inexistente -> 404
+POST {{baseUrl}}/productos
+Content-Type: application/json
+
+{
+  "nombre": "Producto con categoría fantasma",
+  "precio_base": 10,
+  "categoria_ids": [99999]
+}
+
+### E4. Detalle de producto inexistente -> 404
+GET {{baseUrl}}/productos/99999
+
+### E5. Vincular categoría a producto inexistente -> 404
+POST {{baseUrl}}/productos/99999/categorias/{{catA.response.body.id}}
+
+### E6. Eliminar producto inexistente -> 404
+DELETE {{baseUrl}}/productos/99999
